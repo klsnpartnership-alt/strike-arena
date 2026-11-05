@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>STRIKE ARENA</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#101820;color:#eef;font-family:Arial,sans-serif;touch-action:manipulation}
+#app{height:100%;display:flex;flex-direction:column;background:linear-gradient(145deg,#263d43,#101820)}
+header,footer{background:#0b1218;padding:14px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-weight:900;letter-spacing:2px;color:#70e0c1}.stat{text-align:center;font-size:11px;color:#9db0b0}.stat b{display:block;font-size:20px;color:white}
+#arena{position:relative;flex:1;overflow:hidden;background-image:linear-gradient(#ffffff0b 1px,transparent 1px),linear-gradient(90deg,#ffffff0b 1px,transparent 1px),linear-gradient(#26383b,#111b20);background-size:36px 36px,36px 36px,100% 100%}
+#targets{position:absolute;inset:0}.target{position:absolute;width:66px;height:66px;border:5px solid #eee;border-radius:50%;background:radial-gradient(circle,#f8e7a8 0 15%,#df795e 16% 37%,#f4d7a3 38% 57%,#d85e50 58% 72%,#f2e6d0 73%);padding:0;margin:0}
+#overlay{position:absolute;inset:0;background:#071016eF;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center}
+.card{width:100%;max-width:400px;padding:26px 20px;border:1px solid #70e0c155;border-radius:20px;background:#17292f}
+h1{color:#70e0c1;letter-spacing:3px}p{color:#c3d0d0;line-height:1.5;font-size:14px}
+button.action{width:100%;padding:18px;border:0;border-radius:12px;background:#70e0c1;color:#10201f;font-size:17px;font-weight:bold;margin-top:16px}
+footer{font-size:12px;color:#9db0b0}footer b{color:#70e0c1}
+</style>
+</head>
+<body>
+<div id="app">
+<header><div class="logo">STRIKE / ARENA</div><div class="stat">СЧЁТ<b id="score">0</b></div><div class="stat">ВРЕМЯ<b id="time">30</b></div></header>
+<div id="arena"><div id="targets"></div>
+<div id="overlay"><div class="card"><h1 id="heading">STRIKE ARENA</h1><p id="message">Аркадный тренинг в духе соревновательных шутеров. Нажимай на появляющиеся мишени и набери максимум очков за 30 секунд.</p><button class="action" id="start" onclick="startGame()">НАЧАТЬ МАТЧ</button></div></div>
+</div>
+<footer><span>МОБИЛЬНАЯ АРЕНА</span><b id="status">ГОТОВ К МАТЧУ</b><span>30 СЕК.</span></footer>
+</div>
+<script>
+(function(){
+var score=0,seconds=30,running=false,timer=null,spawner=null;
+var $=function(id){return document.getElementById(id)};
+function clearTargets(){$('targets').innerHTML=''}
+function spawnTarget(){
+ if(!running)return;
+ var arena=$('arena'),el=document.createElement('button');
+ el.className='target';el.type='button';el.setAttribute('aria-label','Мишень');
+ var size=66, maxX=Math.max(0,arena.clientWidth-size), maxY=Math.max(0,arena.clientHeight-size);
+ el.style.left=Math.floor(Math.random()*maxX)+'px';
+ el.style.top=Math.floor(25+Math.random()*Math.max(1,maxY-25))+'px';
+ el.onclick=function(ev){ev.preventDefault();if(!running)return;score++;$('score').textContent=score;el.remove()};
+ $('targets').appendChild(el);
+ window.setTimeout(function(){if(el.parentNode)el.remove()},1500);
+}
+window.startGame=function(){
+ if(running)return;
+ window.clearInterval(timer);window.clearInterval(spawner);
+ score=0;seconds=30;running=true;
+ $('score').textContent='0';$('time').textContent='30';
+ $('overlay').style.display='none';$('status').textContent='МАТЧ ИДЁТ';clearTargets();
+ spawnTarget();
+ spawner=window.setInterval(spawnTarget,700);
+ timer=window.setInterval(function(){
+  seconds--; $('time').textContent=seconds;
+  if(seconds<=0)finishGame();
+ },1000);
+};
+function finishGame(){
+ running=false;window.clearInterval(timer);window.clearInterval(spawner);clearTargets();
+ $('status').textContent='МАТЧ ЗАВЕРШЁН';
+ $('heading').textContent='МАТЧ ОКОНЧЕН';
+ $('message').innerHTML='Твой результат: <b>'+score+'</b><br>Попробуешь улучшить результат?';
+ $('start').textContent='ЕЩЁ РАУНД';$('overlay').style.display='flex';
+}
+})();
+</script>
+</body></html>
