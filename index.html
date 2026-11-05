@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#171916">
+<title>STRIKE ARENA 3D — Old City</title>
+<style>
+:root{--amber:#e8b66a;--cream:#e8dfca;--dark:#121613;--panel:rgba(18,22,18,.84);--line:rgba(232,182,106,.42)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#171916;color:var(--cream);font-family:Tahoma,Arial,sans-serif;touch-action:none}
+#game{position:fixed;inset:0;display:block;width:100%;height:100%;outline:none}
+#grain{position:fixed;inset:0;pointer-events:none;opacity:.12;z-index:3;background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0px,rgba(0,0,0,.12) 1px,transparent 2px,transparent 4px);mix-blend-mode:multiply}
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:2;background:radial-gradient(ellipse at center,transparent 45%,rgba(8,10,8,.48) 100%)}
+#hud{position:fixed;inset:0;z-index:5;pointer-events:none}
+.panel{background:var(--panel);border:1px solid var(--line);box-shadow:0 3px 16px #0008;backdrop-filter:blur(3px)}
+#topbar{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+#brand{padding:8px 11px;font-size:12px;letter-spacing:2px;color:var(--amber);font-weight:bold}
+#objective{padding:8px 12px;min-width:185px;text-align:center;font-size:11px;letter-spacing:1px}
+#objective b{display:block;color:#f3d39a;font-size:13px;margin-bottom:3px}
+#objective small{color:#bfb49d}
+#minimap{width:116px;height:116px;padding:5px}
+#mapCanvas{width:100%;height:100%;display:block}
+#bottom{position:absolute;left:14px;right:14px;bottom:12px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+#device{display:flex;align-items:center;gap:10px;padding:8px 11px;min-width:220px}
+#deviceIcon{width:54px;height:38px;position:relative;border:1px solid #9b8967;background:linear-gradient(135deg,#55564d,#222821);clip-path:polygon(0 27%,65% 0,100% 15%,88% 100%,12% 100%)}
+#deviceIcon:before{content:"";position:absolute;width:18px;height:18px;border:3px solid #d6b36e;border-radius:50%;right:4px;top:8px;box-shadow:0 0 8px #d6b36e88}
+#deviceIcon:after{content:"";position:absolute;left:8px;top:16px;width:20px;height:3px;background:#c5b18b}
+#deviceText{font-size:10px;letter-spacing:1.2px;color:#d8c9a9}
+#deviceText b{display:block;font-size:13px;color:#f0d49b;margin-top:4px}
+#stats{padding:8px 12px;display:flex;gap:18px;font-size:10px;letter-spacing:1px}
+.stat span{display:block;color:#9b9c89;margin-bottom:3px}
+.stat b{font-size:17px;color:#f0e4c9}
+#hint{position:absolute;left:50%;top:53%;transform:translate(-50%,-50%);font-size:11px;letter-spacing:1px;color:#f5e6c4;text-shadow:0 2px 4px #000;text-align:center;white-space:nowrap}
+#crosshair{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);opacity:.85}
+#crosshair:before,#crosshair:after{content:"";position:absolute;background:#e9dfc8;box-shadow:0 0 3px #000}
+#crosshair:before{width:2px;height:16px;left:8px;top:1px}#crosshair:after{height:2px;width:16px;left:1px;top:8px}
+#message{position:absolute;left:50%;top:18%;transform:translateX(-50%);padding:9px 14px;font-size:11px;letter-spacing:1px;opacity:0;transition:opacity .2s;color:#f7dfa8;text-align:center}
+#startScreen{position:fixed;z-index:10;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(120deg,rgba(12,16,13,.92),rgba(22,24,19,.76));padding:18px}
+#startCard{width:min(520px,100%);padding:24px;border:1px solid #a88755;background:rgba(20,24,19,.95);box-shadow:0 15px 55px #000b}
+#startCard h1{font-size:clamp(26px,6vw,42px);letter-spacing:4px;color:#e6bd79;margin:0 0 7px}
+#startCard .sub{font-size:11px;letter-spacing:2px;color:#aaa18b;margin-bottom:20px}
+#startCard p{font-size:13px;line-height:1.6;color:#d6d0c0;margin:8px 0}
+#startCard .controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:17px 0}
+.key{border:1px solid #766548;background:#292b23;padding:9px;font-size:11px;color:#d9cba9}
+#play{width:100%;border:1px solid #efca86;background:linear-gradient(#c79a54,#916b38);color:#171711;padding:13px;font-size:14px;font-weight:bold;letter-spacing:2px;cursor:pointer}
+#mobileControls{display:none;position:fixed;z-index:6;inset:0;pointer-events:none}
+#stickZone{position:absolute;left:18px;bottom:26px;width:132px;height:132px;border:1px solid #d2bb8a55;border-radius:50%;background:#161b1670;pointer-events:auto}
+#stick{position:absolute;width:52px;height:52px;left:39px;top:39px;border-radius:50%;background:#d0b47b66;border:1px solid #e5c88d99}
+#scanButton{position:absolute;right:22px;bottom:35px;width:86px;height:86px;border-radius:50%;border:2px solid #e4bf7b;background:radial-gradient(circle,#8a754caa,#20251de8);color:#f1dbad;font-size:11px;font-weight:bold;letter-spacing:1px;pointer-events:auto;box-shadow:0 0 20px #d4ae5b33}
+#lookZone{position:absolute;right:0;top:16%;width:58%;height:58%;pointer-events:auto}
+#rotateHint{position:absolute;right:15px;bottom:132px;font-size:9px;letter-spacing:1px;color:#ead7ae88}
+#performance{position:absolute;right:140px;bottom:17px;font-size:9px;color:#9d9b87}
+#loading{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:#171916;color:#e2c18a;letter-spacing:2px;font-size:12px}
+@media(max-width:700px){#topbar{left:8px;right:8px;top:8px}#brand{font-size:10px;padding:7px}#objective{min-width:145px;padding:7px;font-size:9px}#objective b{font-size:11px}#minimap{width:88px;height:88px}#bottom{left:8px;right:8px;bottom:8px}#device{min-width:0;padding:6px;gap:6px}#deviceIcon{width:40px;height:30px}#deviceText{font-size:8px}#deviceText b{font-size:10px}#stats{gap:9px;padding:7px;font-size:8px}.stat b{font-size:14px}#mobileControls{display:block}#performance{display:none}#hint{top:59%}}
+</style>
+</head>
+<body>
+<div id="loading">BUILDING OLD CITY…</div>
+<canvas id="game"></canvas>
+<div id="grain"></div><div id="vignette"></div>
+<div id="hud">
+ <div id="topbar">
+  <div id="brand" class="panel">STRIKE ARENA <span style="color:#9f9b86">/ 03</span></div>
+  <div id="objective" class="panel"><b>CONTROL POINT: BAZAAR</b><small id="objectiveStatus">NEUTRAL · 0%</small></div>
+  <div id="minimap" class="panel"><canvas id="mapCanvas" width="200" height="200"></canvas></div>
+ </div>
+ <div id="crosshair"></div><div id="hint"></div><div id="message" class="panel"></div>
+ <div id="bottom">
+  <div id="device" class="panel"><div id="deviceIcon"></div><div id="deviceText">FIELD DEVICE<b>PULSE SCANNER <span id="charges">●●●●</span></b></div></div>
+  <div id="stats" class="panel"><div class="stat"><span>MARKED</span><b id="marked">00</b></div><div class="stat"><span>TIME</span><b id="clock">04:00</b></div><div class="stat"><span>FPS</span><b id="fps">--</b></div></div>
+ </div>
+</div>
+<div id="mobileControls">
+ <div id="stickZone"><div id="stick"></div></div>
+ <div id="lookZone"></div><div id="rotateHint">DRAG TO LOOK</div>
+ <button id="scanButton">SCAN</button>
+</div>
+<div id="startScreen">
+ <div id="startCard">
+  <h1>STRIKE ARENA 3D</h1><div class="sub">OLD CITY — CLASSIC ARENA PROTOTYPE</div>
+  <p>Исследуй старый квартал, найди контрольную точку на базаре и отмечай тренировочных ботов импульсным сканером. Здесь нет реалистичного оружия или жестоких сцен — только аркадное соревнование.</p>
+  <div class="controls">
+   <div class="key"><b>W A S D</b><br>Движение</div><div class="key"><b>МЫШЬ</b><br>Обзор</div>
+   <div class="key"><b>ПРОБЕЛ</b><br>Прыжок</div><div class="key"><b>ЛКМ / E</b><br>Импульсный скан</div>
+  </div>
+  <p style="font-size:11px;color:#a9a28f">На телефоне: левый круг — движение, правая часть экрана — обзор, кнопка SCAN — импульс.</p>
+  <button id="play">ENTER THE ARENA</button>
+ </div>
+</div>
+<script>
+window.__threeReady = new Promise((resolve, reject) => {
+  const urls = [
+    'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js',
+    'https://unpkg.com/three@0.160.0/build/three.min.js'
+  ];
+  let index = 0, settled = false, timer;
+  function attempt() {
+    if (index >= urls.length) {
+      if (!settled) { settled = true; clearTimeout(timer); reject(new Error('Не удалось загрузить 3D-библиотеку. Проверь интернет или открой сайт позже.')); }
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = urls[index++];
+    script.async = true;
+    script.onload = () => {
+      if (!settled && window.THREE) { settled = true; clearTimeout(timer); resolve(); }
+      else if (!settled) attempt();
+    };
+    script.onerror = () => { clearTimeout(timer); attempt(); };
+    document.head.appendChild(script);
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (!settled) { script.remove(); attempt(); }
+    }, 7000);
+  }
+  attempt();
+});
+</script>
+<script>
+window.__threeReady.then(() => {
+(()=> {
+'use strict';
+const $=id=>document.getElementById(id);
+const isMobile=matchMedia('(pointer:coarse)').matches || innerWidth<760;
+let scene,camera,renderer,clock,player={x:-38,y:1.72,z:34,yaw:-.55,pitch:0,vy:0,grounded:true};
+let world=[],colliders=[],bots=[],scanCharges=4,marked=0,capture=0,elapsed=240,gameStarted=false,scanPulse=null,lastScan=0;
+let move={forward:0,side:0},keys={},fpsSamples=[],lastFrame=performance.now(),frameCount=0;
+const tex={};
+const mat={};
+function seededNoise(w,h,base,variation,block=1){
+ const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');
+ x.fillStyle=base;x.fillRect(0,0,w,h);
+ for(let i=0;i<Math.floor(w*h/6);i++){const v=Math.random()*variation; x.fillStyle=`rgba(${Math.random()>.5?255:0},${Math.random()>.5?255:0},${Math.random()>.5?255:0},${v/255})`;x.fillRect(Math.random()*w,Math.random()*h,block,block);}
+ const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=1;return t;
+}
+function makePlaster(){
+ const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
+ g.fillStyle='#b69a70';g.fillRect(0,0,256,256);
+ for(let i=0;i<16000;i++){let v=Math.random();g.fillStyle=v>.5?'rgba(240,218,174,.12)':'rgba(52,43,30,.09)';g.fillRect(Math.random()*256,Math.random()*256,1+Math.random()*4,1+Math.random()*3);}
+ for(let i=0;i<24;i++){g.strokeStyle='rgba(76,62,43,.22)';g.lineWidth=1;g.beginPath();let x=Math.random()*256,y=Math.random()*256;g.moveTo(x,y);g.lineTo(x+(Math.random()-.5)*30,y+Math.random()*26);g.stroke();}
+ return canvasTex(c);
+}
+function makeBrick(){
+ const c=document.createElement('canvas');c.width=256;c.height=256;const g=c.getContext('2d');
+ g.fillStyle='#695547';g.fillRect(0,0,256,256);
+ for(let r=0;r<8;r++){let offset=r%2?0:16;for(let col=-1;col<8;col++){let x=col*36+offset,y=r*32;g.fillStyle=['#9a7658','#87664f','#a17b5a','#80604b'][Math.floor(Math.random()*4)];g.fillRect(x+1,y+1,34,29);g.fillStyle='rgba(245,213,169,.13)';g.fillRect(x+2,y+2,30,2);for(let k=0;k<4;k++){g.fillStyle='rgba(44,35,28,.15)';g.fillRect(x+Math.random()*30,y+Math.random()*25,3,2);}}}
+ return canvasTex(c);
+}
+function makeConcrete(){
+ const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='#77766b';g.fillRect(0,0,256,256);
+ for(let i=0;i<21000;i++){let a=Math.random()*.18;g.fillStyle=Math.random()>.5?`rgba(220,217,199,${a})`:`rgba(30,32,29,${a})`;g.fillRect(Math.random()*256,Math.random()*256,1+Math.random()*3,1+Math.random()*2);}
+ for(let i=0;i<8;i++){g.strokeStyle='#585a50';g.globalAlpha=.25;g.beginPath();g.moveTo(Math.random()*256,0);g.lineTo(Math.random()*256,256);g.stroke();}g.globalAlpha=1;return canvasTex(c);
+}
+function makeSand(){
+ const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='#ab9169';g.fillRect(0,0,256,256);
+ for(let i=0;i<18000;i++){g.fillStyle=Math.random()>.5?'rgba(238,210,158,.25)':'rgba(69,54,35,.12)';g.fillRect(Math.random()*256,Math.random()*256,1+Math.random()*2,1+Math.random()*2);}
+ for(let i=0;i<30;i++){g.strokeStyle='rgba(98,77,48,.13)';g.beginPath();let x=Math.random()*256,y=Math.random()*256;g.moveTo(x,y);g.quadraticCurveTo(x+30,y+15,x+60,y+8);g.stroke();}return canvasTex(c);
+}
+function canvasTex(c){const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.magFilter=THREE.NearestFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=1;return t;}
+function material(name,texture,color=0xffffff,repeat=[1,1]){if(!mat[name]){const t=texture.clone();t.repeat.set(...repeat);mat[name]=new THREE.MeshLambertMaterial({map:t,color});}return mat[name];}
+function box(w,h,d,x,y,z,m,rot=0,collide=false){
+ const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);mesh.position.set(x,y,z);mesh.rotation.y=rot;mesh.castShadow=false;mesh.receiveShadow=false;scene.add(mesh);world.push(mesh);
+ if(collide)colliders.push({x,z,hw:w/2,hd:d/2,rot});
+ return mesh;
+}
+function floor(w,d,x,z,m){const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,d),m);mesh.rotation.x=-Math.PI/2;mesh.position.set(x,.02,z);scene.add(mesh);world.push(mesh);return mesh;}
+function wall(x1,z1,x2,z2,h=5.2,th=.65,m=mat.plaster,base=0,addCollider=true){
+ const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),angle=Math.atan2(-dz,dx);
+ const mesh=box(len,h,th,(x1+x2)/2,base+h/2,(z1+z2)/2,m,angle,false);
+ if(addCollider)colliders.push({x:(x1+x2)/2,z:(z1+z2)/2,hw:len/2,hd:th/2,rot:angle});
+ // battered stone footing
+ box(len,.32,th+.08,(x1+x2)/2,base+.16,(z1+z2)/2,mat.concrete,angle,false);
+ return mesh;
+}
+function archFrame(cx,z, width=3.6,height=4.4,depth=.7,rot=0){
+ const r=width/2, spring=height-r, stone=material('archstone',tex.brick,0xffffff,[1,1]);
+ const pillarH=spring;
+ const local=(x,y)=>{const c=Math.cos(rot),s=Math.sin(rot);return [cx+x*c-y*0*s,z-x*s];};
+ // side piers
+ for(const sx of [-1,1]){
+  const p=local(sx*(r-.28),0);box(.56,pillarH,depth,p[0],pillarH/2,p[1],stone,rot,true);
+  box(.72,.24,depth+.12,p[0],.2,p[1],mat.concrete,rot,false);
+ }
+ // voussoir blocks following the arch
+ for(let i=0;i<11;i++){
+  const a=Math.PI-(i+.5)*Math.PI/11,rr=r-.12;
+  const lx=Math.cos(a)*rr,ly=spring+Math.sin(a)*rr;
+  const p=local(lx,ly);
+  const b=box(Math.PI*rr/11+.16,.48,depth,p[0],ly,p[1],stone,rot+Math.PI/2-a,false);
+  b.rotation.y=rot;
+  // blocks stand individually, arranged around curve in the facade plane
+ }
+}
+function openingWall(x1,z,x2,h=5.2,doorW=3.6,baseMat=mat.plaster,rot=0){
+ const cx=(x1+x2)/2,len=x2-x1,side=(len-doorW)/2;
+ wall(x1,z,cx-doorW/2,z,h,.7,baseMat);
+ wall(cx+doorW/2,z,x2,z,h,.7,baseMat);
+ // lintel and trim; arch frame is layered over the clear passage
+ box(doorW,.55,.78,cx,h-.28,z,mat.brick,0,true);
+ archFrame(cx,z,doorW,4.1,.9,0);
+}
+function stairs(x,z,steps=10,width=3,dir=1){
+ for(let i=0;i<steps;i++){const rise=.22*(i+1),depth=.48;box(width,rise,depth,x,rise/2,z+dir*(i*depth),mat.concrete,0,false);}
+ const railMat=mat.metal;
+ box(.12,2.7,.12,x-width/2,.8,z+dir*2.3,railMat,0,false);
+ box(.12,2.7,.12,x+width/2,.8,z+dir*2.3,railMat,0,false);
+}
+function window(x,y,z,w=1.3,h=1.15,rot=0){
+ const frame=mat.brick,dark=mat.dark;
+ box(w+.24,h+.22,.18,x,y,z,frame,rot,false);box(w,h,.21,x,y,z-.03,dark,rot,false);
+ box(w,.07,.25,x,y-h*.1,z-.16,mat.metal,rot,false);
+ box(w,.1,.25,x,y+h*.1,z-.16,mat.metal,rot,false);
+}
+function makeCrate(x,z,s=1){
+ const c=box(s,s,s,x,s/2,z,mat.wood,Math.random()*.2,true);
+ for(let i=-1;i<=1;i++){box(.08,s*1.02,.03,x+i*s*.27,s/2,z-s*.505,mat.woodDark,0,false);}
+ box(s*1.02,.07,.04,x,s*.3,z-s*.52,mat.woodDark,0,false);
+ return c;
+}
+function addLamp(x,y,z,rot=0){
+ const dark=mat.metal;box(.12,.12,.8,x,y,z,dark,rot,false);
+ const arm=box(.75,.1,.1,x+.32,y-.34,z,dark,rot,false);
+ const bulb=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),new THREE.MeshBasicMaterial({color:0xe2b773}));bulb.position.set(x+.58,y-.4,z);scene.add(bulb);
+}
+function buildBuildingA(){
+ // West-side merchant house with open front, inner courtyard, stairs and roof
+ floor(19,17,-27,1,mat.floor);
+ wall(-36,-8,-18,-8,5.7,.75,mat.plaster);
+ wall(-36,-8,-36,10,5.7,.75,mat.plaster);
+ wall(-18,-8,-18,-1,5.7,.75,mat.brick);
+ wall(-18,4,-18,10,5.7,.75,mat.brick);
+ wall(-36,10,-30,10,5.7,.75,mat.plaster);
+ wall(-24,10,-18,10,5.7,.75,mat.plaster);
+ // interior partition with doorway
+ wall(-31,-8,-31,-1,3.8,.5,mat.brick);
+ wall(-31,3,-25,3,3.8,.5,mat.brick);
+ wall(-25,3,-25,10,3.8,.5,mat.brick);
+ // upper floor slab / parapet
+ box(18,.35,16,-27,5.8,1,mat.concrete,0,false);
+ wall(-36,-8,-18,-8,1.35,.48,mat.brick,5.9,false);
+ wall(-36,10,-18,10,1.35,.48,mat.brick,5.9,false);
+ wall(-36,-8,-36,10,1.35,.48,mat.brick,5.9,false);
+ wall(-18,-8,-18,-1,1.35,.48,mat.brick,5.9,false);
+ stairs(-21,8,10,2,-1);
+ window(-26,3.8,-8.42,1.4,1.2);
+ window(-32,3.8,-8.42,1.4,1.2);
+ window(-18.42,3.8,5,1.3,1.1,Math.PI/2);
+ box(3.2,.15,2.1,-27,.9,5,mat.wood,false,false);
+ makeCrate(-33,5,.9);makeCrate(-21,7,.8);
+ box(2.4,.7,.35,-27,1.1,9,mat.wood,false,false);
+}
+function buildNorthBlock(){
+ floor(26,15,1,-28,mat.floor);
+ // outer shell with large arched entrance opening at front
+ wall(-12,-36,14,-36,6,.8,mat.brick);
+ wall(-12,-36,-12,-20,6,.8,mat.brick);
+ wall(14,-36,14,-20,6,.8,mat.brick);
+ wall(-12,-20,-4,-20,6,.8,mat.brick);
+ wall(4,-20,14,-20,6,.8,mat.brick);
+ // internal rooms / passage
+ wall(-5,-36,-5,-24,4.5,.55,mat.plaster);
+ wall(-5,-24,5,-24,4.5,.55,mat.plaster);
+ wall(5,-24,5,-36,4.5,.55,mat.plaster);
+ wall(-12,-28,-8,-28,4,.5,mat.plaster);
+ wall(8,-28,14,-28,4,.5,mat.plaster);
+ box(26,.35,15,1,6.05,-28,mat.concrete);
+ wall(-12,-36,14,-36,1.2,.45,mat.brick,6.1,false);
+ wall(-12,-36,-12,-20,1.2,.45,mat.brick,6.1,false);
+ wall(14,-36,14,-20,1.2,.45,mat.brick,6.1,false);
+ stairs(10,-22,12,2,-1);
+ window(-8,4,-36.42,1.5,1.2);window(0,4,-36.42,1.5,1.2);window(8,4,-36.42,1.5,1.2);
+ addLamp(-9,4.7,-19.8);
+}
+function buildEastCourtyard(){
+ floor(19,21,28,2,mat.floor);
+ wall(19,-9,38,-9,5.5,.7,mat.plaster);
+ wall(38,-9,38,13,5.5,.7,mat.plaster);
+ wall(19,13,38,13,5.5,.7,mat.brick);
+ wall(19,-9,19,-3,5.5,.7,mat.plaster);
+ wall(19,4,19,13,5.5,.7,mat.plaster);
+ // side room and awning
+ wall(25,-9,25,-1,4,.5,mat.brick);
+ wall(25,-1,34,-1,4,.5,mat.brick);
+ wall(34,-1,34,-9,4,.5,mat.brick);
+ box(7,.18,3,29,3.2,-6,mat.wood);
+ for(let i=0;i<4;i++)box(.12,2.6,.12,26+i*2,1.9,-7,mat.woodDark);
+ box(18,.3,20,28,5.6,2,mat.concrete);
+ wall(19,-9,38,-9,1.2,.45,mat.brick,5.7,false);
+ wall(38,-9,38,13,1.2,.45,mat.brick,5.7,false);
+ wall(19,13,38,13,1.2,.45,mat.brick,5.7,false);
+ stairs(21,11,10,2,-1);
+ window(30,3.9,-9.42,1.4,1.2);
+ makeCrate(35,8,.85);makeCrate(35,5,.85);
+}
+function buildSouthMarket(){
+ // market lane, shopfronts with recessed spaces
+ wall(-40,22,-32,22,4.7,.55,mat.plaster);
+ wall(-26,22,-17,22,4.7,.55,mat.plaster);
+ wall(-40,22,-40,28,4.7,.55,mat.plaster);
+ wall(-40,32,-40,43,4.7,.55,mat.plaster);
+ wall(-17,22,-17,43,4.7,.55,mat.brick);
+ wall(-40,43,-17,43,4.7,.55,mat.brick);
+ floor(22,20,-28.5,32.5,mat.floor);
+ for(let i=0;i<3;i++){
+  const x=-37+i*8;
+  box(5.8,2.1,.22,x,2.25,22.3,mat.wood,false,false);
+  box(5.8,.18,.35,x,3.5,22.25,mat.brick,false,false);
+  box(5.4,.14,.4,x,1.25,22.15,mat.metal,false,false);
+  for(let j=0;j<4;j++)box(.08,1.3,.08,x-2+j*1.3,2.4,22.02,mat.woodDark);
+ }
+ makeCrate(-22,28,1);makeCrate(-37,38,.9);
+}
+function buildMap(){
+ tex.plaster=makePlaster();tex.brick=makeBrick();tex.concrete=makeConcrete();tex.sand=makeSand();
+ mat.plaster=material('plaster',tex.plaster,0xffffff,[2,1.4]);
+ mat.brick=material('brick',tex.brick,0xffffff,[2,1.5]);
+ mat.concrete=material('concrete',tex.concrete,0xffffff,[2,1]);
+ mat.sand=material('sand',tex.sand,0xffffff,[4,4]);
+ mat.floor=material('floor',tex.sand,0xffffff,[8,7]);
+ mat.dark=new THREE.MeshLambertMaterial({color:0x292b27});
+ mat.metal=new THREE.MeshLambertMaterial({color:0x555b55});
+ mat.wood=new THREE.MeshLambertMaterial({color:0x76563a});
+ mat.woodDark=new THREE.MeshLambertMaterial({color:0x392e23});
+ mat.road=new THREE.MeshLambertMaterial({map:tex.concrete,color:0xa9a18d});
+ floor(100,100,0,0,mat.sand);
+ // main streets and worn paving
+ floor(100,13,0,0,mat.road);floor(13,100,0,0,mat.road);
+ floor(76,8,0,25,mat.road);floor(8,70,0,-3,mat.road);
+ for(let i=-4;i<=4;i++)for(let j=-4;j<=4;j++){
+  if(Math.random()>.67)box(1.2,.035,1.2,i*8+.7,.045,j*8+1,mat.concrete,Math.random()*.5,false);
+ }
+ // perimeter buildings and traversable urban lanes
+ buildBuildingA();buildNorthBlock();buildEastCourtyard();buildSouthMarket();
+ // South-east service building
+ floor(17,15,28,30,mat.floor);
+ wall(19,22,37,22,5.1,.7,mat.brick);
+ wall(37,22,37,39,5.1,.7,mat.plaster);
+ wall(37,39,19,39,5.1,.7,mat.plaster);
+ wall(19,39,19,22,5.1,.7,mat.brick);
+ wall(25,22,25,31,3.5,.5,mat.plaster);
+ wall(25,31,33,31,3.5,.5,mat.plaster);
+ box(18,.3,17,28,5.1,30,mat.concrete);
+ stairs(21,37,9,2,-1);
+ window(27,3.6,39.4,1.4,1.1,Math.PI);
+ // arch portals at major intersections
+ archFrame(-1,-19,4.4,4.6,1.1,0);
+ archFrame(-17,10,3.8,4.3,1.0,Math.PI/2);
+ archFrame(17,13,3.8,4.3,1.0,Math.PI/2);
+ // retaining walls and low parapets
+ wall(-47,-46,47,-46,4,.8,mat.brick);wall(-47,46,47,46,4,.8,mat.brick);
+ wall(-47,-46,-47,46,4,.8,mat.brick);wall(47,-46,47,46,4,.8,mat.brick);
+ // street details: drain grates, barrels, benches, signboards
+ for(let i=0;i<7;i++){const x=-38+i*12;box(2.5,.06,.5,x,.08,7,mat.metal);for(let k=0;k<5;k++)box(.06,.025,.42,x-1+k*.5,.12,7,mat.dark);}
+ for(let i=0;i<5;i++){const x=-35+i*17;box(2.8,.16,.65,x,.85,-4,mat.wood);box(2.8,.16,.65,x,1.5,-4,mat.wood);for(let k=0;k<3;k++)box(.13,.9,.13,x-1+k,0.5,-4,mat.woodDark);}
+ // water jars and barrels
+ for(const [x,z] of [[-12,14],[14,18],[40,5],[-42,-12],[11,35]]){
+  const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.42,.48,1.1,8),mat.wood);barrel.position.set(x,.55,z);scene.add(barrel);
+  for(let y of [.2,.85]){const hoop=new THREE.Mesh(new THREE.TorusGeometry(.44,.045,5,12),mat.metal);hoop.rotation.x=Math.PI/2;hoop.position.set(x,y,z);scene.add(hoop);}
+ }
+ // overhead cloth awnings
+ for(let i=0;i<3;i++){const aw=new THREE.Mesh(new THREE.PlaneGeometry(5,4),new THREE.MeshLambertMaterial({color:i%2?0x9b5140:0xc0a06d,side:THREE.DoubleSide}));aw.rotation.x=-Math.PI/2.7;aw.position.set(-31+i*8,4.4,18);scene.add(aw);}
+ // focal beacon / capture area
+ const base=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.5,.35,12),mat.metal);base.position.set(0,.2,0);scene.add(base);
+ const pillar=new THREE.Mesh(new THREE.CylinderGeometry(.32,.5,2.4,8),new THREE.MeshLambertMaterial({color:0x8e7b56}));pillar.position.set(0,1.45,0);scene.add(pillar);
+ const orb=new THREE.Mesh(new THREE.IcosahedronGeometry(.7,1),new THREE.MeshBasicMaterial({color:0xf0c77d,wireframe:true}));orb.position.set(0,3,0);scene.add(orb);world.push(orb);scene.userData.beacon=orb;
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(3.3,.055,6,36),new THREE.MeshBasicMaterial({color:0xd7a65d}));ring.rotation.x=Math.PI/2;ring.position.y=.24;scene.add(ring);scene.userData.ring=ring;
+ // stairs on open rooftops
+ stairs(-42,-5,9,2,1);
+ // decorative rooftop vents
+ for(let i=0;i<6;i++){box(1.4,1.2,1.4,-34+i*13,6.5,-40,mat.concrete);box(.2,1.8,.2,-34+i*13,7.7,-40,mat.metal);}
+ // lighting fixtures
+ addLamp(-15,4.4,14);addLamp(16,4.5,-17);addLamp(39,4.1,20);
+}
+function makeBot(x,z,index){
+ const group=new THREE.Group();
+ const shell=new THREE.Mesh(new THREE.IcosahedronGeometry(.52,1),new THREE.MeshLambertMaterial({color:0x697d76}));shell.position.y=1.08;group.add(shell);
+ const band=new THREE.Mesh(new THREE.TorusGeometry(.39,.075,6,12),new THREE.MeshBasicMaterial({color:0xd7a95e}));band.position.y=1.08;band.rotation.x=Math.PI/2;group.add(band);
+ const eye=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshBasicMaterial({color:0xc3e3cf}));eye.position.set(0,1.16,-.43);group.add(eye);
+ const antenna=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.42,5),mat.metal);antenna.position.y=1.65;group.add(antenna);
+ const tip=new THREE.Mesh(new THREE.SphereGeometry(.1,6,5),new THREE.MeshBasicMaterial({color:0xd3a45d}));tip.position.y=1.88;group.add(tip);
+ group.position.set(x,0,z);scene.add(group);
+ bots.push({group,x,z,homeX:x,homeZ:z,phase:Math.random()*6.28,marked:false,index});
+}
+function setup(){
+ scene=new THREE.Scene();scene.background=new THREE.Color(0x98917b);scene.fog=new THREE.Fog(0x98917b,38,92);
+ camera=new THREE.PerspectiveCamera(76,innerWidth/innerHeight,.1,130);camera.position.set(player.x,player.y,player.z);
+ renderer=new THREE.WebGLRenderer({canvas:$('game'),antialias:!isMobile,powerPreference:'low-power',alpha:false});
+ // iPhone 15: start at a conservative render scale; adapt to actual frame time.
+ qualityScale=isMobile?1.0:1.5;
+ applyRenderScale();
+ renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
+ scene.add(new THREE.HemisphereLight(0xd9d2bd,0x514637,2.0));
+ const sun=new THREE.DirectionalLight(0xffdca8,1.65);sun.position.set(-25,45,22);scene.add(sun);
+ buildMap();
+ makeBot(-9,13,0);makeBot(12,-12,1);makeBot(29,7,2);makeBot(-28,-2,3);makeBot(8,32,4);
+ clock=new THREE.Clock();
+ window.addEventListener('resize',resize);
+ $('loading').style.display='none';
+ drawMiniMap();
+}
+let qualityScale=1;
+function applyRenderScale(){
+ if(!renderer)return;
+ const cap=isMobile?1.15:1.5;
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,cap)*qualityScale);
+ renderer.setSize(innerWidth,innerHeight);
+}
+function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();applyRenderScale();}
+function collides(x,z){
+ const r=.42;
+ for(const c of colliders){
+  const dx=x-c.x,dz=z-c.z,co=Math.cos(c.rot||0),si=Math.sin(c.rot||0);
+  const lx=dx*co-dz*si,lz=dx*si+dz*co;
+  if(Math.abs(lx)<c.hw+r&&Math.abs(lz)<c.hd+r)return true;
+ }
+ return false;
+}
+function movePlayer(dt){
+ let f=move.forward,s=move.side;
+ if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;
+ if(keys.KeyA||keys.ArrowLeft)s-=1;if(keys.KeyD||keys.ArrowRight)s+=1;
+ const length=Math.hypot(f,s);if(length>1){f/=length;s/=length;}
+ const speed=(keys.ShiftLeft?6.2:4.3)*dt,sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);
+ const dx=(-sy*f+cy*s)*speed,dz=(-cy*f-sy*s)*speed;
+ let nx=player.x+dx,nz=player.z+dz;
+ if(!collides(nx,player.z))player.x=nx;
+ if(!collides(player.x,nz))player.z=nz;
+ if(keys.Space&&player.grounded){player.vy=5;player.grounded=false;keys.Space=false;}
+ player.vy-=13*dt;player.y+=player.vy*dt;
+ if(player.y<1.72){player.y=1.72;player.vy=0;player.grounded=true;}
+ player.x=THREE.MathUtils.clamp(player.x,-44,44);player.z=THREE.MathUtils.clamp(player.z,-44,44);
+ camera.position.set(player.x,player.y,player.z);camera.rotation.order='YXZ';camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;
+}
+function pingMessage(t){$('message').textContent=t;$('message').style.opacity=1;clearTimeout(pingMessage.timer);pingMessage.timer=setTimeout(()=>$('message').style.opacity=0,1500);}
+function doScan(){
+ const now=performance.now();if(now-lastScan<700||!gameStarted)return;lastScan=now;
+ if(scanCharges<=0){pingMessage('SCANNER RECHARGING');return;}
+ scanCharges--;updateCharges();
+ const origin=new THREE.Vector3(player.x,player.y,player.z);
+ const forward=new THREE.Vector3(-Math.sin(player.yaw)*Math.cos(player.pitch),Math.sin(player.pitch),-Math.cos(player.yaw)*Math.cos(player.pitch));
+ const candidates=bots.filter(b=>!b.marked).map(b=>({b,dist:Math.hypot(b.x-player.x,b.z-player.z)})).filter(o=>o.dist<18);
+ candidates.sort((a,b)=>a.dist-b.dist);
+ const target=candidates.find(o=>{const to=new THREE.Vector3(o.b.x,1.1,o.b.z).sub(origin).normalize();return to.dot(forward)>.76;});
+ if(target){target.b.marked=true;target.b.group.traverse(o=>{if(o.material&&o.material.color)o.material.color.set(0xb99a62);});marked++;$('marked').textContent=String(marked).padStart(2,'0');pingMessage('BOT TAGGED · +1');}
+ else pingMessage('PULSE SCAN · NO SIGNAL');
+ const ring=new THREE.Mesh(new THREE.SphereGeometry(2,16,10),new THREE.MeshBasicMaterial({color:0xd8b36c,wireframe:true,transparent:true,opacity:.4}));ring.position.set(player.x,player.y,player.z);scene.add(ring);scanPulse={mesh:ring,t:0};
+}
+function updateCharges(){$('charges').textContent='●'.repeat(scanCharges)+'○'.repeat(4-scanCharges);}
+function updateBots(dt,t){
+ bots.forEach((b,i)=>{
+  b.phase+=dt*(b.marked?1.1:1.7);b.group.position.y=b.marked?0:Math.sin(b.phase)*.13;
+  if(!b.marked){b.x=b.homeX+Math.sin(t*.35+b.phase)*.85;b.z=b.homeZ+Math.cos(t*.3+b.phase)*.65;b.group.position.x=b.x;b.group.position.z=b.z;b.group.rotation.y=Math.sin(t*.45+i)*.5;}
+ });
+ if(scanPulse){scanPulse.t+=dt;scanPulse.mesh.scale.setScalar(1+scanPulse.t*5);scanPulse.mesh.material.opacity=Math.max(0,.4-scanPulse.t*.7);if(scanPulse.t>0.65){scene.remove(scanPulse.mesh);scanPulse=null;}}
+}
+function updateCapture(dt){
+ const d=Math.hypot(player.x,player.z);
+ if(d<3.6){capture=Math.min(100,capture+dt*9);$('objectiveStatus').textContent='CAPTURING · '+Math.floor(capture)+'%';}
+ else {capture=Math.max(0,capture-dt*2.2);$('objectiveStatus').textContent=(capture>=100?'SECURED':'NEUTRAL')+' · '+Math.floor(capture)+'%';}
+ const orb=scene.userData.beacon;if(orb){orb.rotation.y+=dt*.8;orb.position.y=3+Math.sin(performance.now()*.001)*.18;}
+}
+function drawMiniMap(){
+ const c=$('mapCanvas'),g=c.getContext('2d');g.clearRect(0,0,200,200);g.fillStyle='#282a22';g.fillRect(0,0,200,200);
+ g.strokeStyle='#776b54';g.lineWidth=2;
+ // map sketch of blocks and road corridors
+ g.fillStyle='#8b785c';[[16,20,55,48],[122,18,58,43],[16,127,54,53],[128,130,54,52],[75,4,48,42]].forEach(a=>g.fillRect(...a));
+ g.fillStyle='#4b5148';g.fillRect(0,87,200,26);g.fillRect(86,0,27,200);g.fillRect(0,144,200,15);
+ g.fillStyle='#cfaa6a';g.beginPath();g.arc(100,100,5,0,Math.PI*2);g.fill();
+ g.fillStyle='#a8d3bd';bots.forEach(b=>{g.beginPath();g.arc((b.x+50)*2,(b.z+50)*2,3,0,Math.PI*2);g.fill();});
+}
+function updateMap(){const c=$('mapCanvas'),g=c.getContext('2d');drawMiniMap();g.fillStyle='#f3d28e';g.beginPath();g.arc((player.x+50)*2,(player.z+50)*2,4,0,Math.PI*2);g.fill();g.strokeStyle='#f3d28e';g.beginPath();g.moveTo((player.x+50)*2,(player.z+50)*2);g.lineTo((player.x+50)*2-Math.sin(player.yaw)*9,(player.z+50)*2-Math.cos(player.yaw)*9);g.stroke();}
+let mapTimer=0,qualityCheck=0,slowFrames=0,fastFrames=0;
+document.addEventListener('visibilitychange',()=>{
+ if(!clock||!gameStarted)return;
+ if(document.hidden)clock.stop();else clock.start();
+});
+function animate(){
+ requestAnimationFrame(animate);
+ if(!gameStarted||document.hidden)return;
+ const rawDt=clock.getDelta(),dt=Math.min(rawDt,.033),t=clock.elapsedTime;
+ movePlayer(dt);updateBots(dt,t);updateCapture(dt);
+ elapsed=Math.max(0,elapsed-dt);$('clock').textContent=String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(Math.floor(elapsed%60)).padStart(2,'0');
+ mapTimer+=dt;if(mapTimer>.25){updateMap();mapTimer=0;}
+ frameCount++;
+ const now=performance.now(),frameMs=rawDt*1000;
+ if(frameMs>23){slowFrames++;fastFrames=0;}else if(frameMs<17){fastFrames++;slowFrames=0;}else{slowFrames=Math.max(0,slowFrames-1);fastFrames=0;}
+ qualityCheck+=dt;
+ if(isMobile&&qualityCheck>2){
+  const old=qualityScale;
+  if(slowFrames>35)qualityScale=Math.max(.72,qualityScale-.1);
+  else if(fastFrames>100)qualityScale=Math.min(1.05,qualityScale+.05);
+  if(old!==qualityScale){applyRenderScale();slowFrames=0;fastFrames=0;}
+  qualityCheck=0;
+ }
+ if(now-lastFrame>1000){$('fps').textContent=String(Math.round(frameCount*1000/(now-lastFrame)));frameCount=0;lastFrame=now;}
+ renderer.render(scene,camera);
+}
+function start(){
+ if(gameStarted)return;gameStarted=true;$('startScreen').style.display='none';
+ clock.start();if(!isMobile&&$('game').requestPointerLock)$('game').requestPointerLock();
+ $('game').focus();
+}
+$('play').addEventListener('click',start);
+$('scanButton').addEventListener('click',doScan);
+window.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE')doScan();if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();});
+window.addEventListener('keyup',e=>keys[e.code]=false);
+window.addEventListener('mousedown',e=>{if(gameStarted&&e.button===0&&!isMobile)doScan();});
+document.addEventListener('mousemove',e=>{if(gameStarted&&document.pointerLockElement===$('game')){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;player.pitch=THREE.MathUtils.clamp(player.pitch,-1.35,1.35);}});
+$('game').addEventListener('click',()=>{if(gameStarted&&!isMobile&&document.pointerLockElement!==$('game'))$('game').requestPointerLock?.();});
+let stickActive=false,stickCenter={x:0,y:0};
+const stickZone=$('stickZone'),stick=$('stick');
+stickZone.addEventListener('pointerdown',e=>{stickActive=true;stickZone.setPointerCapture(e.pointerId);const r=stickZone.getBoundingClientRect();stickCenter={x:r.left+r.width/2,y:r.top+r.height/2};stickMove(e);});
+stickZone.addEventListener('pointermove',e=>{if(stickActive)stickMove(e);});
+function stickMove(e){let dx=e.clientX-stickCenter.x,dy=e.clientY-stickCenter.y,len=Math.hypot(dx,dy),max=43;if(len>max){dx*=max/len;dy*=max/len;}stick.style.transform=`translate(${dx}px,${dy}px)`;move.side=dx/max;move.forward=-dy/max;}
+function endStick(){stickActive=false;move.side=move.forward=0;stick.style.transform='translate(0,0)';}
+stickZone.addEventListener('pointerup',endStick);stickZone.addEventListener('pointercancel',endStick);
+let lookTouch=null;
+$('lookZone').addEventListener('pointerdown',e=>{lookTouch={x:e.clientX,y:e.clientY,id:e.pointerId};$('lookZone').setPointerCapture(e.pointerId);});
+$('lookZone').addEventListener('pointermove',e=>{if(!lookTouch||lookTouch.id!==e.pointerId)return;const dx=e.clientX-lookTouch.x,dy=e.clientY-lookTouch.y;player.yaw-=dx*.006;player.pitch=THREE.MathUtils.clamp(player.pitch-dy*.005,-1.35,1.35);lookTouch.x=e.clientX;lookTouch.y=e.clientY;});
+$('lookZone').addEventListener('pointerup',()=>lookTouch=null);$('lookZone').addEventListener('pointercancel',()=>lookTouch=null);
+document.addEventListener('contextmenu',e=>e.preventDefault());
+try{setup();animate();}catch(err){$('loading').textContent='ОШИБКА ЗАПУСКА: '+err.message;console.error(err);}
+})();
+}).catch(err => {
+  const el = document.getElementById('loading');
+  if (el) {
+    el.style.whiteSpace = 'normal';
+    el.style.maxWidth = '85%';
+    el.style.textAlign = 'center';
+    el.textContent = err.message;
+  }
+  console.error(err);
+});
+</script>
+</body>
+</html>
